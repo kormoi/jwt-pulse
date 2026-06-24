@@ -1,0 +1,35 @@
+{
+  "name": "jwt-pulse",
+  "version": "1.0.0",
+  "description": "A dynamic, time-aware JWT utility for Node.js designed to generate batch sequences with variable time offsets, validate multi-cadence signatures, and instantly decode payload payloads.",
+  "keywords": [
+    "jwt",
+    "jwt-pulse",
+    "json-web-token",
+    "token-generator",
+    "jwt-validation",
+    "batch-tokens",
+    "time-interval",
+    "auth",
+    "authentication",
+    "session-management",
+    "jwt-decode",
+    "secure-tokens",
+    "rotating-sessions"
+  ],
+  "homepage": "https://github.com/kormoi/jwt-pulse#readme",
+  "bugs": {
+    "url": "https://github.com/kormoi/jwt-pulse/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kormoi/jwt-pulse.git"
+  },
+  "license": "MIT",
+  "author": "Md Nasiruddin Ahmed",
+  "type": "commonjs",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  }
+}
