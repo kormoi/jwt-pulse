@@ -87,8 +87,43 @@ You don't need to memorize exact syntax parameters. Calling any matching alias p
 #### Storage Initialization Synonyms (`async`)
 | | | | |
 | :--- | :--- | :--- | :--- |
-| initiate | initialize | provision | setup |
-| seed | allocate | setupfile | setuptoken |
-| initializestore | provisionvault | setupregistry | createcache |
-| createfile | buildrepository | allocatestorage | originatedatabase |
-| seedmanifest | createtoken | createtokenfile | create |
+| `initiate` | `initialize` | `provision` | `setup` |
+| `seed` | `allocate` | `setupfile` | `setuptoken` |
+| `initializestore` | `provisionvault` | `setupregistry` | `createcache` |
+| `createfile` | `buildrepository` | `allocatestorage` | `originatedatabase` |
+| `seedmanifest` | `createtoken` | `createtokenfile` | `create` |
+
+#### Token Generation Synonyms (`async`)
+
+| | | | |
+| :--- | :--- | :--- | :--- |
+| `generate` | `sign` | `mint` | `issue` |
+| `spawn` | `produce` | `grant` | `build` |
+| `createtoken` | `signtoken` | `minttoken` | `issuetoken` |
+| `spawntoken` | `producetoken` | `granttoken` | `buildtoken` |
+| `generatetoken` | `gettoken` | | |
+
+#### Token Verification Synonyms (`async`)
+
+| | | | |
+| :--- | :--- | :--- | :--- |
+| verify | validate | check | decode |
+| inspect | parse | authenticate | confirm |
+| verifytoken | validatetoken | checktoken | decodetoken |
+| inspecttoken | parsetoken | authenticatetoken | confirmtoken |
+
+
+## 🎛 Flexible Configuration Variables Matrix
+When assembling configurations for storage target elements, keys inside your object arrays can adapt to any matching nomenclature parameter below.
+
+- **Token Identifiers (**`name_variables`**):**
+`name`, `token_name`, `tokenname`, `token_id`, `token_identifier`, `id`, `identifier`, `session_name`, `session_id`, `key_name`, `key_id`, `auth_name`
+
+- **Lifespan Ranges (**`lifespan_variables`**):**
+`life`, `lifespan`, `lifetime`, `token_lifespan`, `token_lifetime`, `ttl`, `time_to_live`, `expiry`, `expires_in`, `duration`, `timeout`
+
+- **Metric Units (**`unit_variables`**):**
+`unit`, `time_unit`, `timeunit`, `duration_unit`, `measure`, `measurement`, `metric`, `interval`, `period`
+
+- **Epoch Anchors (**`from_variable`**):**
+`start`, `begin`, `from`, `beginfrom`, `startfrom`, `start_from`, `fromtime`, `starttime`
