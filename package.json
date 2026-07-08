@@ -1,6 +1,6 @@
 {
   "name": "jwt-pulse",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Generate JWT token with custom payload and expiration time.",
   "keywords": [
     "jwt-pulse",
