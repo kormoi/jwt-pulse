@@ -85,9 +85,9 @@ if (decoded) {
 You don't need to memorize exact syntax parameters. Calling any matching alias profile from the dynamic tables below executes the underlying function seamlessly. **All aliases listed require** `await`.
 
 #### Storage Initialization Synonyms (`async`)
-
-| initiate | initialize | provision | setup |
+| | | | |
 | :--- | :--- | :--- | :--- |
+| initiate | initialize | provision | setup |
 | seed | allocate | setupfile | setuptoken |
 | initializestore | provisionvault | setupregistry | createcache |
 | createfile | buildrepository | allocatestorage | originatedatabase |
