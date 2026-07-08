@@ -2,7 +2,8 @@ const cstyler = require("cstyler");
 const links = require("./links.js");
 const fncs = require(links.functions);
 const path = require("path");
-
+const crypto = require('crypto');
+const fs = require('fs');
 
 
 
@@ -59,6 +60,9 @@ const lifespan_variables = [
     "timeout",
     "session_duration",
     "active_duration",
+    "length",
+    "scale",
+    "size",
     "life_cycle"
 ];
 const unit_variables = [
@@ -73,30 +77,14 @@ const unit_variables = [
     "interval",
     "interval_unit",
     "period_type",
+    "period",
     "format",
-    "type"
+    "type",
+    "duration",
+    "timeout"
 ];
 const from_variable = ["start", "begin", "from", "beginfrom", "begin_from", "begin from", "startfrom", "start_from", "start from", "fromtime", "from time", "from_time", "beginetime", "begin_time", "begin time", "starttime", "start time", "start_time"];
-const token_size_synonyms = [
-    "length",
-    "entropy",
-    "strength",
-    "capacity",
-    "bitdepth",
-    "scale",
-    "complexity",
-    "magnitude",
-    "volume",
-    "span",
-    "breadth",
-    "tokensize",
-    "secrettokensize",
-    "size",
-    "token_size",
-    "token size",
-    "secret_token_size",
-    "secret token size"
-];
+
 
 function convertToMilliseconds(value, key) {
     const msPerSecond = 1000;
@@ -134,18 +122,6 @@ function generateTokenSecret(length = 32) {
     // Generates strong pseudo-random bytes and converts to a hex string
     return crypto.randomBytes(length).toString('hex');
 }
-async function tokenWriter(tokenName, tokenSize) {
-    try {
-        let tokenFile = require(links.token);
-        tokenFile[tokenName].old = tokenFile[tokenName].new;
-        tokenFile[tokenName].new = generateTokenSecret(tokenSize);
-        const writeFile = await fncs.writeJsonFile(links.token, tokenFile);
-        return writeFile;
-    } catch (e) {
-        console.error("Having problem writing token. Error message: ", e.message);
-        return null;
-    }
-}
 async function createFile(data) {
     try {
         if (
@@ -160,10 +136,8 @@ async function createFile(data) {
                     const isName = name_variables.includes(key);
                     const isUnit = unit_variables.includes(key);
                     const isFrom = from_variable.includes(key);
-                    const isSize = token_size_synonyms.includes(key);
-
                     // 1. Check if the key is allowed at all
-                    if (!isLifespan && !isName && !isUnit) {
+                    if (!isLifespan && !isName && !isUnit && !isFrom) {
                         return false;
                     }
 
@@ -175,6 +149,7 @@ async function createFile(data) {
                     // 3. Validate 'lifespan' variables (must be a number)
                     // Note: I changed this from your original code assuming it was a typo!
                     if (isLifespan && !fncs.isNumber(value)) {
+                        console.log(value)
                         return false;
                     }
 
@@ -185,14 +160,9 @@ async function createFile(data) {
 
                     // 5. validate from time
                     if (isFrom) {
-                        if (typeof value === "string" && value.toLowerCase() !== "now" && !fncs.parseDate(value)) {
-                            return false;
-                        } else if (!fncs.parseDate(value)) {
+                        if ((typeof value === "string" && (value.toLowerCase() !== "now" && !fncs.parseDate(value))) && !fncs.parseDate(value)) {
                             return false;
                         }
-                    }
-                    if (isSize && typeof value !== "number") {
-                        return false;
                     }
                 }
 
@@ -219,11 +189,6 @@ async function createFile(data) {
                     isUnit = token[key];
                 } else if (from_variable.includes(key)) {
                     isFrom = token[key];
-                } else if (token_size_synonyms.includes(key)) {
-                    isSize = token[key];
-                    if (isSize < 12) {
-                        isSize = 12;
-                    }
                 }
             }
             // Lets clear up variables
@@ -253,38 +218,64 @@ async function createFile(data) {
                 isLifespan = isLifespan * 10;
             }
             isLifespan = convertToMilliseconds(isLifespan, isUnit);
-
+            // Lets define secret token size
             if (isUnit === "year") {
                 isSize = 64;
             } else if (isUnit === "month") {
-                if (!isSize || isSize < 32) {
-                    isSize = 32;
-                }
-            } else if (isSize && isSize > 64) {
-                isSize = 64;
+                isSize = 32;
+            } else if (isUnit === "week") {
+                isSize = 24;
+            } else if (isUnit === "day") {
+                isSize = 18;
             } else {
                 isSize = 12;
             }
 
             // Lets add token to json file
+            JSONfileData[isName] = {};
+            functionRunner[isName] = {};
             JSONfileData[isName].new = generateTokenSecret(isSize);
+            JSONfileData[isName].old = JSONfileData[isName].new;
+            JSONfileData[isName].duration = isLifespan;
             functionRunner[isName].life = isLifespan;
             functionRunner[isName].size = isSize;
             functionRunner[isName].start = isFrom;
         }
-        const writeJson = await fncs.writeJsonFile(path.join(__dirname, links.token), JSONfileData);
-        if (!writeJson) {
-            throw new Error("Having problem writing token to file");
+
+        // if tokens are available already no need to recreate them
+        let tokenExist = true;
+        const tokenFile = require(links.token);
+        for (const item of Object.keys(tokenFile)) {
+            if (!Object.keys(JSONfileData).includes(item)) {
+                tokenExist = false;
+                break;
+            }
+            if (tokenFile[item].duration !== JSONfileData[item].duration) {
+                tokenExist = false;
+                break;
+            }
+            const oldToken = tokenFile[item].new;
+            const newToken = JSONfileData[item].new;
+            if (oldToken.length !== newToken.length) {
+                tokenExist = false;
+                break;
+            }
+        }
+        if (!tokenExist) {
+            const writeJson = await fncs.writeJsonFile(path.join(__dirname, links.token), JSONfileData);
+            if (!writeJson) {
+                throw new Error("Having problem writing token to file");
+            }
         }
         console.log(cstyler.bold.green("Successfully written all token to JSON file."));
         for (const item of Object.keys(functionRunner)) {
             scheduleRecurringTask(functionRunner[item].start, functionRunner[item].life, tokenWriter, [item, functionRunner[item].size]);
         }
         console.log(cstyler.bold.green("Successfully running all the token with time cycle."));
-        return true;
+        return { success: true, message: "Successfully running all the token with time cycle." };
     } catch (error) {
         console.error("Error creating file:", error.message);
-        return null;
+        return { success: false, message: error.message };
     }
 }
 
@@ -296,10 +287,25 @@ async function createFile(data) {
  * @param {Function} task - The function to execute.
  * @param {...*} taskArgs - Arguments to pass directly into the task function.
  */
-function scheduleRecurringTask(anchoredDate, intervalMs, task, ...taskArgs) {
-    const anchorTime = anchoredDate.getTime();
+async function scheduleRecurringTask(anchoredDate, intervalMs, task, ...taskArgs) {
+    // --- SMART INTERCEPT: Convert the string "now" into the current timestamp ---
+    let targetDate = anchoredDate;
+    if (typeof anchoredDate === 'string' && anchoredDate.toLowerCase().trim() === 'now') {
+        targetDate = new Date();
+    }
 
-    function run() {
+    const parsedDate = new Date(targetDate);
+
+    // Safeguard check to ensure the date string or object is valid
+    if (isNaN(parsedDate.getTime())) {
+        console.error("Error: The anchoredDate passed to scheduleRecurringTask is invalid:", anchoredDate);
+        return;
+    }
+
+    const anchorTime = parsedDate.getTime();
+
+    // ... rest of your run() engine code remains exactly the same ...
+    async function run() {
         const now = Date.now();
         let nextRunTime;
 
@@ -313,34 +319,56 @@ function scheduleRecurringTask(anchoredDate, intervalMs, task, ...taskArgs) {
 
         const delay = nextRunTime - now;
 
-        // 32-bit setTimeout safeguard
         const MAX_TIMEOUT_MS = 2147483647;
         if (delay > MAX_TIMEOUT_MS) {
             setTimeout(run, 20 * 24 * 60 * 60 * 1000);
             return;
         }
 
-        console.log(`Task scheduled to run at: ${new Date(nextRunTime).toLocaleString()}`);
+        console.log(`${cstyler.yellow("Token will be updated at:")} ${cstyler.purple(new Date(nextRunTime).toLocaleString())}`);
 
-        setTimeout(() => {
+        setTimeout(async () => {
             try {
-                // Execute the task with the passed parameters
-                task(...taskArgs);
+                await task(...taskArgs);
             } catch (err) {
                 console.error("Error executing scheduled task:", err);
             }
-
             run();
         }, delay);
     }
 
     run();
 }
+async function tokenWriter(tokenData) {
+    try {
+        const tokenName = tokenData[0];
+        const tokenSize = tokenData[1];
+        
+        // --- FIX: Read fresh from disk to capture external changes ---
+        let tokenFile;
+        try {
+            const fileContent = fs.readFileSync(links.token, 'utf-8');
+            tokenFile = fileContent.trim() ? JSON.parse(fileContent) : {};
+        } catch (readErr) {
+            tokenFile = {}; // Fallback if file doesn't exist
+        }
 
-let dataStructure = [
-    { name: "NEW_JWT_SECRET", lifetime: 20, unit: "min", startfrom: "now" },
-    { name: "Oldfilesecret", life: 10, unit: "min", start: new Date() }
-]
+        // Ensure the token block object exists before updating fields
+        if (!tokenFile[tokenName]) {
+            tokenFile[tokenName] = { new: "", old: "", duration: 0 };
+        }
+
+        tokenFile[tokenName].old = tokenFile[tokenName].new;
+        tokenFile[tokenName].new = generateTokenSecret(tokenSize);
+
+        const writeFile = await fncs.writeJsonFile(links.token, tokenFile);
+        return writeFile;
+    } catch (e) {
+        console.error("Having problem writing token. Error message: ", e.message);
+        return null;
+    }
+}
+
 
 module.exports = {
     createFile,

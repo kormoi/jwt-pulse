@@ -7,7 +7,6 @@ const links = require("./links");
 
 
 async function readJsonFile(filePath) {
-    // 1. Immediate validation check: if extension is wrong, don't waste time retrying
     if (path.extname(filePath).toLowerCase() !== ".json") {
         console.error(`Error: The file at ${filePath} is not a JSON file.`);
         return null;
@@ -17,39 +16,36 @@ async function readJsonFile(filePath) {
 
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            // Read the file as a string
             const fileContent = await fs.readFile(filePath, "utf-8");
-
-            // Parse the JSON string into an object
-            const jsonData = JSON.parse(fileContent);
-            return jsonData;
             
+            // --- FIX: If the file is completely empty, return an empty object instead of crashing ---
+            if (!fileContent || fileContent.trim() === "") {
+                return {}; 
+            }
+
+            return JSON.parse(fileContent);
         } catch (error) {
-            // If it's a syntax error (corrupted JSON text), retrying won't fix it. Exit early.
+            // If the file simply doesn't exist yet, return an empty object so the app can start
+            if (error.code === 'ENOENT') {
+                return {};
+            }
+
             if (error instanceof SyntaxError) {
                 console.error(`JSON Syntax Error at ${filePath}:`, error.message);
                 return null;
             }
-
-            console.warn(`Attempt ${attempt} failed reading file at ${filePath}. Error: ${error.message}`);
-
-            // If all attempts are exhausted, log final error and return null
             if (attempt === maxRetries) {
-                console.error(`All ${maxRetries} attempts failed reading from ${filePath}.`);
+                console.error(`All ${maxRetries} attempts failed reading from ${filePath}:`, error.message);
                 return null;
             }
-
-            // Small 100ms breathing room before next attempt
             await new Promise(resolve => setTimeout(resolve, 100));
         }
     }
 }
-
 async function writeJsonFile(filePath, data) {
     const maxRetries = 3;
     const jsonString = JSON.stringify(data, null, 2);
-
-    // Ensure the parent directory structure exists before writing
+    
     try {
         const dir = path.dirname(filePath);
         await fs.mkdir(dir, { recursive: true });
@@ -58,90 +54,27 @@ async function writeJsonFile(filePath, data) {
         return null;
     }
 
-    // Loop through the retry attempts
+    // Create a safe temp file path in the same directory
+    const tempFilePath = `${filePath}.${Date.now()}.tmp`;
+
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
         try {
-            await fs.writeFile(filePath, jsonString, "utf-8");
-            console.log(`File written successfully to ${filePath} (Attempt ${attempt})`);
+            // 1. Write everything safely to the temporary file first
+            await fs.writeFile(tempFilePath, jsonString, "utf-8");
+            
+            // 2. Instantly rename/move it over the real file (Atomic Swap)
+            await fs.rename(tempFilePath, filePath);
             return true;
         } catch (error) {
-            console.warn(`Attempt ${attempt} failed writing JSON file at ${filePath}. Error: ${error.message}`);
+            // Clean up the temp file if this specific attempt failed
+            try { await fs.unlink(tempFilePath); } catch (_) {}
 
-            // If we hit the maximum threshold, log the final error and exit
             if (attempt === maxRetries) {
-                console.error(`All ${maxRetries} attempts failed writing to ${filePath}.`);
+                console.error(`All ${maxRetries} attempts failed writing to ${filePath}:`, error.message);
                 return null;
             }
-
-            // Optional: Give the disk a brief 100ms breather before trying again
             await new Promise(resolve => setTimeout(resolve, 100));
         }
-    }
-}
-function stringifyAny(data) {
-    // If the data is undefined or a symbol, handle it explicitly.
-    if (typeof data === 'undefined') {
-        return 'undefined';
-    } else if (data === null) {
-        return 'null';
-    } else if (data === true) {
-        return "true";
-    } else if (data === false) {
-        return "false";
-    }
-    if (typeof data === 'symbol') {
-        return data.toString();
-    }
-    // 💡 TOP-LEVEL CHECK: Convert raw top-level buffers directly to base64
-    if (Buffer.isBuffer(data)) {
-        return data.toString('base64');
-    }
-    // For non-objects (primitives) that are not undefined, simply convert them.
-    if (typeof data !== 'object' && typeof data !== 'function') {
-        return String(data);
-    }
-    if (typeof data === "string") {
-        return data;
-    }
-
-    // Handle objects and functions using JSON.stringify with a custom replacer.
-    const seen = new WeakSet();
-    const replacer = (key, value) => {
-        // 💡 NESTED CHECK: Catch buffers embedded inside objects or arrays
-        if (Buffer.isBuffer(value)) {
-            return value.toString('base64');
-        }
-        if (typeof value === 'function') {
-            // Convert functions to their string representation.
-            return value.toString();
-        }
-        if (typeof value === 'undefined') {
-            return 'undefined';
-        }
-        if (typeof value === 'object' && value !== null) {
-            // Check for circular references
-            if (seen.has(value)) {
-                return '[Circular]';
-            }
-            seen.add(value);
-        }
-        return value;
-    };
-
-    try {
-        return JSON.stringify(data, replacer, 2);
-    } catch (error) {
-        // Fallback to a simple string conversion if JSON.stringify fails
-        return String(data);
-    }
-}
-async function matchPassword(password, hashedPassword) {
-    try {
-        const sha512Hash = crypto.createHash('sha512').update(password).digest('hex');
-        const result = await bcrypt.compare(sha512Hash, hashedPassword);
-        return { success: true, result: result }
-    } catch (error) {
-        return { success: false, error_type: "server", servererror: true, message: error.message }
     }
 }
 function isNumber(str) {
@@ -158,17 +91,6 @@ function isNumber(str) {
 }
 function isJsonObject(value) {
     return typeof value === "object" && value !== null && !Array.isArray(value);
-}
-//checks if the string is JSON string or not
-function isJsonString(jsonString) {
-    try {
-        const parsed = JSON.parse(jsonString);
-        return (
-            typeof parsed === "object" && parsed !== null && !Array.isArray(parsed)
-        );
-    } catch (error) {
-        return false;
-    }
 }
 function parseDate(dateValue) {
     try {// 1. If it's already a Date instance, check if it's "Invalid Date"
@@ -190,8 +112,6 @@ function parseDate(dateValue) {
         return null;
     }
 }
-
-
 function generateTokenSecret(length = 32) {
     // Generates strong pseudo-random bytes and converts to a hex string
     return crypto.randomBytes(length).toString('hex');
@@ -202,11 +122,8 @@ function generateTokenSecret(length = 32) {
 module.exports = {
     readJsonFile,
     writeJsonFile,
-    stringifyAny,
-    matchPassword,
     isNumber,
     isJsonObject,
-    isJsonString,
     parseDate,
     generateTokenSecret,
 };
