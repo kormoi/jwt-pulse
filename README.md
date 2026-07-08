@@ -4,6 +4,7 @@ A hyper-flexible, automated JSON Web Token (JWT) lifecycle manager and rotation 
 
 ---
 
+
 ## 🚀 Key Architectural Concepts
 
 1. **Token Names as Keys:** You never hardcode, handle, or pass raw cryptographic secret strings in your application routing. The **Secret Token Name** (e.g., `'ACCESS_TOKEN_SECRET'`) acts as your master identifier key.
@@ -17,11 +18,14 @@ A hyper-flexible, automated JSON Web Token (JWT) lifecycle manager and rotation 
 
 ---
 
+
 ## 🛠 Installation
 
 ```bash
 npm install jwt-pulse
 ```
+
+
 
 ## 📖 Main API Functions & Lifecycle Guide
 ### 1. Provision Vault / Setup Configuration (`async`)
@@ -42,6 +46,8 @@ async function runAuth() {
 }
 ```
 
+
+
 ### 2. Generate / Mint Token (`async`)
 To mint a token, pass your payload data along with the Secret Token Name. The Secret Token Name is strictly required here because the token's active configuration (lifespan and key length) depends directly on that profile.
 
@@ -54,8 +60,11 @@ console.log("Generated Token String:", token);
 
 ```
 
+
+
 ### 3. Verify / Validate Token (`async`)
 You can verify an incoming token using targeted lookups or global automated fallback scanning:
+
 
 #### Targeted Verification (Recommended)
 Pass the token alongside its known `SecretTokenName` identifier to validate instantly against that specific structural key signature.
@@ -66,6 +75,8 @@ Pass the token alongside its known `SecretTokenName` identifier to validate inst
 const decoded = await jwtPulse.verify(token, "ACCESS_TOKEN_SECRET");
 
 ```
+
+
 
 #### Blind Verification Scanning (Zero-Configuration Fallback)
 If you forget the specific name or are parsing an inbound authorization header dynamically, leave the second argument completely empty! `jwt-pulse` will seamlessly cascade iterate through **every active token identity inside the vault** to attempt matching signatures. It returns your decoded payload as soon as a match passes.
@@ -81,8 +92,10 @@ if (decoded) {
 ```
 
 
+
 ## 🎯 Smart API Aliases (Dynamic Proxy Methods)
 You don't need to memorize exact syntax parameters. Calling any matching alias profile from the dynamic tables below executes the underlying function seamlessly. **All aliases listed require** `await`.
+
 
 
 #### Storage Initialization Synonyms (`async`)
@@ -95,6 +108,7 @@ You don't need to memorize exact syntax parameters. Calling any matching alias p
 | `seedmanifest` | `createtoken` | `createtokenfile` | `create` |
 
 
+
 #### Token Generation Synonyms (`async`)
 
 | | | | |
@@ -104,6 +118,7 @@ You don't need to memorize exact syntax parameters. Calling any matching alias p
 | `createtoken` | `signtoken` | `minttoken` | `issuetoken` |
 | `spawntoken` | `producetoken` | `granttoken` | `buildtoken` |
 | `generatetoken` | `gettoken` | | |
+
 
 
 #### Token Verification Synonyms (`async`)
@@ -133,24 +148,23 @@ When assembling configurations for storage target elements, keys inside your obj
 `start`, `begin`, `from`, `beginfrom`, `startfrom`, `start_from`, `fromtime`, `starttime`
 
 
+
+
 #### ⏳ Allowed Time Scale Strings
 - **Seconds:** `s`, `sec`, `secs`, `second`, `seconds` (12-char keys)
-
 - **Minutes:** `m`, `min`, `mins`, `minute`, `minutes` (12-char keys)
-
 - **Hours:** `h`, `hr`, `hrs`, `hour`, `hours` (12-char keys)
-
 - **Days:** `d`, `day`, `days` (Triggers 18-character secret keys)
-
 - **Weeks:** `w`, `wk`, `wks`, `week`, `weeks` (Triggers 24-character secret keys)
-
 - **Months:** `mo`, `mon`, `mons`, `month`, `months` (Triggers 32-character secret keys)
-
 - **Years:** `y`, `yr`, `yrs`, `year`, `years` (Triggers 64-character secret keys)
+
+
 
 
 ## ⚙️ Example: Polymorphic Structural Data Formats
 Because of the internal token parsing engine, both elements inside this array format perfectly—despite using entirely distinct nomenclature profiles for their properties:
+
 
 ```js
 let inputdataStructure = [
@@ -173,6 +187,8 @@ let inputdataStructure = [
 
 await jwtPulse.initializeStore(inputdataStructure);
 ```
+
+
 
 ## 🛡️ License
 MIT
