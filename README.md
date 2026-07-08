@@ -84,6 +84,7 @@ if (decoded) {
 ## 🎯 Smart API Aliases (Dynamic Proxy Methods)
 You don't need to memorize exact syntax parameters. Calling any matching alias profile from the dynamic tables below executes the underlying function seamlessly. **All aliases listed require** `await`.
 
+
 #### Storage Initialization Synonyms (`async`)
 | | | | |
 | :--- | :--- | :--- | :--- |
@@ -92,6 +93,7 @@ You don't need to memorize exact syntax parameters. Calling any matching alias p
 | `initializestore` | `provisionvault` | `setupregistry` | `createcache` |
 | `createfile` | `buildrepository` | `allocatestorage` | `originatedatabase` |
 | `seedmanifest` | `createtoken` | `createtokenfile` | `create` |
+
 
 #### Token Generation Synonyms (`async`)
 
@@ -103,6 +105,7 @@ You don't need to memorize exact syntax parameters. Calling any matching alias p
 | `spawntoken` | `producetoken` | `granttoken` | `buildtoken` |
 | `generatetoken` | `gettoken` | | |
 
+
 #### Token Verification Synonyms (`async`)
 
 | | | | |
@@ -113,7 +116,8 @@ You don't need to memorize exact syntax parameters. Calling any matching alias p
 | inspecttoken | parsetoken | authenticatetoken | confirmtoken |
 
 
-## 🎛 Flexible Configuration Variables Matrix
+
+#### 🎛 Flexible Configuration Variables Matrix
 When assembling configurations for storage target elements, keys inside your object arrays can adapt to any matching nomenclature parameter below.
 
 - **Token Identifiers (**`name_variables`**):**
@@ -127,3 +131,50 @@ When assembling configurations for storage target elements, keys inside your obj
 
 - **Epoch Anchors (**`from_variable`**):**
 `start`, `begin`, `from`, `beginfrom`, `startfrom`, `start_from`, `fromtime`, `starttime`
+
+
+#### ⏳ Allowed Time Scale Strings
+- **Seconds:** `s`, `sec`, `secs`, `second`, `seconds` (12-char keys)
+
+- **Minutes:** `m`, `min`, `mins`, `minute`, `minutes` (12-char keys)
+
+- **Hours:** `h`, `hr`, `hrs`, `hour`, `hours` (12-char keys)
+
+- **Days:** `d`, `day`, `days` (Triggers 18-character secret keys)
+
+- **Weeks:** `w`, `wk`, `wks`, `week`, `weeks` (Triggers 24-character secret keys)
+
+- **Months:** `mo`, `mon`, `mons`, `month`, `months` (Triggers 32-character secret keys)
+
+- **Years:** `y`, `yr`, `yrs`, `year`, `years` (Triggers 64-character secret keys)
+
+
+## ⚙️ Example: Polymorphic Structural Data Formats
+Because of the internal token parsing engine, both elements inside this array format perfectly—despite using entirely distinct nomenclature profiles for their properties:
+
+```js
+let inputdataStructure = [
+    // Format A: Triggers 12-character string secrets automatically based on 'sec'
+    { 
+        name: "NEW_JWT_SECRET", 
+        lifetime: 3, 
+        unit: "sec", 
+        startfrom: "now" 
+    },
+    
+    // Format B: Triggers 32-character string secrets automatically based on 'months'
+    { 
+        token_identifier: "Oldfilesecret", 
+        max_age: 2, 
+        duration_unit: "months", 
+        start: new Date() 
+    }
+];
+
+await jwtPulse.initializeStore(inputdataStructure);
+```
+
+## 🛡️ License
+MIT
+© Md Nasiruddin Ahmed
+[KORMOI](https://facebook.com/kormoi)
